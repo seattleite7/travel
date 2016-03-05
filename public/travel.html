@@ -1,0 +1,133 @@
+<html>
+  <head>
+    <title>Find City</title>
+    <script src="https://code.jquery.com/jquery-1.10.2.js"></script>
+    <script>
+      var cats = 0;
+      var KEY = "ef488afc90f35de1";
+      var preUrl = "https://api.wunderground.com/api/" +KEY +"/geolookup/conditions/q/Utah/";
+      function writeHints(data) {
+
+        var output = "<ul>";
+        $.each(data, function(i, item) {
+           output += "<li>" + item.city + "</li>";
+        });
+        output += "</ul>";
+        $('#divSuggestion').html(output);
+      }
+
+      function writeWeather(data) {
+        var obs = data.current_observation;
+        var output = "<img src='" + obs.icon_url + "' />";
+
+        output += "<ul>";
+        output += "<li> Temp: "+ obs.temperature_string + "</li>";
+        output += "<li> Weather: " + obs.weather + "</li>";
+        output += "<li> Wind: " + obs.wind_mph + " mph " + obs.wind_dir + "</li>";
+
+        output += "</ul>";
+
+        $('#divResults').html(output);
+      }
+
+     function writeCat(data) {
+        cats = cats + 1;
+        $('#numCats').html("You have displayed " + cats + " cats.");
+        if (cats < 5)
+           $('#boredom').html("Boredom level: Still sane");
+        else if (cats < 10)
+           $('#boredom').html("Boredom level: You need a hobby");
+        else
+            $('#boredom').html("Boredom level: Curiosity killed the cat");
+
+        var tag = data.replace("</a>", "</img></a>");
+        $('#divCat').html(tag);
+     }
+
+     
+
+      function doCat() {
+            $.ajax({
+               url: "http://thecatapi.com/api/images/get?format=html",
+               dataType: "text",
+               success: writeCat});
+
+      }
+
+      function doHint() {
+          $.getJSON("../getcity?q=" + $('#txtCity').val(),writeHints
+           ).done(function() { console.log("success"); })
+             .fail(function(jqXHR, textStatus, errorThrown) {
+             }).complete(function() {console.log("ended");});
+      }
+
+      function doDistance(url) {
+          $.getJSON(url, writeWeather);
+      }
+
+      function setNote(note) {
+        $.ajax({
+           url: "../setnote",
+           data: {q:note},
+           type: "POST",
+           success: function(data) {
+              $('#note').html(data);
+           }
+         });
+      }
+      
+
+      function getNote() {
+         $.ajax({
+           url: "../getnote",
+           success: function(data) {
+              $('#note').html(data);
+           }
+         });
+      }
+       $(document).ready(function() {
+         $('#txtCity').keyup(doHint);
+         $('#submitCity').click(function(e) {
+             console.log($('#txtCity').val());
+             $('#txtResultCity').val($('#txtCity').val());
+             doDistance(preUrl + $('#txtResultCity').val() + ".json");
+             e.preventDefault();
+         });
+
+         $('#btnCat').click(function() {
+                 doCat();
+
+          });
+
+         $('#btnDoNote').click(function() {
+            setNote($('#inputNote').val());
+         });
+         getNote();
+       });
+
+
+    </script>
+  </head>
+  <body>
+     <form>
+        <p>Enter a Utah City:
+              <input id="txtCity" type="text" /></p>
+
+        <p>Suggestion:</p>
+        <div id="divSuggestion"> </div>
+        <input id="submitCity" type="submit" />
+     </form>
+     <textarea id="txtResultCity"> </textarea>
+     <div id="divResults"> </div>
+     <!--<button  id="btnCat" type="button">Bored?</button>
+     <div id="numCats" ></div>
+     <div id="boredom" ></div>
+     <div id="divCat" ></div>
+     -->
+     <p>Write a note for the next visitor!</p>
+     <input id="inputNote" type="text" />
+     <button type="button" id="btnDoNote">Change Note</button>
+     <pre>Current note: </pre><div id="note"></div>
+  </body>
+</html>
+
